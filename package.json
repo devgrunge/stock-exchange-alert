@@ -1,0 +1,22 @@
+{
+  "name": "stock-exchange-alert",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@9.10.0",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "typecheck": "turbo run typecheck",
+    "lint": "turbo run lint",
+    "format": "prettier --write \"**/*.{ts,tsx,js,mjs,cjs,json,md,css,html}\"",
+    "generate:icons": "node scripts/generate-icons.mjs"
+  },
+  "devDependencies": {
+    "prettier": "^3.3.3",
+    "turbo": "^2.3.3",
+    "typescript": "^5.6.3"
+  }
+}
