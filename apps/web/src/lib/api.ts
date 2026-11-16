@@ -2,11 +2,18 @@ import type { AssetConfig, PushSubscriptionPayload, Quote } from '@repo/shared';
 
 export const API_URL = import.meta.env.VITE_API_URL ?? '';
 
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
+async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
+  const { body, headers, ...rest } = init;
+
   const res = await fetch(`${API_URL}${path}`, {
-    headers: { 'Content-Type': 'application/json' },
-    ...init,
+    ...rest,
+    body,
+    headers: {
+      ...(body != null ? { 'Content-Type': 'application/json' } : {}),
+      ...(headers as Record<string, string> | undefined),
+    },
   });
+
   if (!res.ok) {
     const text = await res.text().catch(() => '');
     throw new Error(`API ${path} failed (${res.status}): ${text}`);
