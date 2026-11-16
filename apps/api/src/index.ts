@@ -1,5 +1,6 @@
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
+import { authRoutes, authenticate, registerJwt } from './auth';
 import { initDb } from './db';
 import { env } from './env';
 import { createProvider } from './providers';
@@ -21,14 +22,24 @@ async function main(): Promise<void> {
     methods: ['GET', 'PUT', 'POST', 'DELETE', 'OPTIONS'],
   });
 
+  await registerJwt(app);
+
   const quoteService = new QuoteService(createProvider());
   const pushService = new PushService();
 
+  // Public routes (no authentication required).
   app.register((instance, _opts, done) => {
+    healthRoutes(instance);
+    authRoutes(instance);
+    done();
+  }, { prefix: '/api' });
+
+  // Protected routes (require a valid JWT).
+  app.register((instance, _opts, done) => {
+    instance.addHook('preHandler', authenticate);
     quoteRoutes(instance, quoteService);
     configRoutes(instance);
     pushRoutes(instance, pushService);
-    healthRoutes(instance);
     done();
   }, { prefix: '/api' });
 

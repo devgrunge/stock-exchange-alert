@@ -22,7 +22,14 @@ export const env = {
   webOrigin: optional('WEB_ORIGIN', 'http://localhost:5173'),
   checkIntervalMs: number('CHECK_INTERVAL_MS', 15 * 60 * 1000),
   timeZone: optional('TZ', 'America/Sao_Paulo'),
+  authUsername: optional('AUTH_USERNAME'),
+  authPasswordHash: optional('AUTH_PASSWORD_HASH'),
+  jwtSecret: optional('JWT_SECRET'),
+  jwtExpiresIn: optional('JWT_EXPIRES_IN', '30d'),
 };
 
 export const pushConfigured =
   env.vapidPublicKey !== '' && env.vapidPrivateKey !== '';
+
+export const authConfigured =
+  env.authUsername !== '' && env.authPasswordHash !== '' && env.jwtSecret !== '';

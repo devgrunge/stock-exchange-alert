@@ -1,18 +1,25 @@
 import type { AssetConfig, PushSubscriptionPayload, Quote } from '@repo/shared';
+import { getToken, handleUnauthorized } from './auth';
 
 export const API_URL = import.meta.env.VITE_API_URL ?? '';
 
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   const { body, headers, ...rest } = init;
+  const token = getToken();
 
   const res = await fetch(`${API_URL}${path}`, {
     ...rest,
     body,
     headers: {
       ...(body != null ? { 'Content-Type': 'application/json' } : {}),
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...(headers as Record<string, string> | undefined),
     },
   });
+
+  if (res.status === 401) {
+    handleUnauthorized();
+  }
 
   if (!res.ok) {
     const text = await res.text().catch(() => '');
@@ -24,6 +31,27 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
 export interface QuotesResponse {
   quotes: Quote[];
   lastRefresh: string | null;
+}
+
+export interface LoginResponse {
+  token: string;
+  username: string;
+}
+
+export async function login(username: string, password: string): Promise<LoginResponse> {
+  const res = await fetch(`${API_URL}/api/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username, password }),
+  });
+
+  if (res.status === 401) {
+    throw new Error('Usuário ou senha inválidos');
+  }
+  if (!res.ok) {
+    throw new Error('Falha ao entrar. Tente novamente.');
+  }
+  return res.json() as Promise<LoginResponse>;
 }
 
 export function fetchQuotes(refresh = false): Promise<QuotesResponse> {
