@@ -24,7 +24,10 @@ function delay(ms: number): Promise<void> {
 export class BrapiProvider implements QuoteProvider {
   readonly name = 'brapi';
 
-  constructor(private readonly token = '') {}
+  constructor(
+    private readonly token = '',
+    private readonly baseUrl = 'https://brapi.dev',
+  ) {}
 
   async fetchQuotes(tickers: Ticker[]): Promise<Quote[]> {
     // Fetch sequentially to avoid tripping brapi's burst rate limit.
@@ -52,7 +55,8 @@ export class BrapiProvider implements QuoteProvider {
   }
 
   private async fetchOne(ticker: Ticker): Promise<Quote> {
-    const url = new URL(`https://brapi.dev/api/quote/${ticker}`);
+    const base = this.baseUrl.replace(/\/+$/, '');
+    const url = new URL(`${base}/api/quote/${ticker}`);
     if (this.token) url.searchParams.set('token', this.token);
 
     const controller = new AbortController();

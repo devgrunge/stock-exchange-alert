@@ -13,7 +13,9 @@ RUN corepack prepare pnpm@9.10.0 --activate \
 RUN pnpm --filter @repo/web build
 
 FROM nginx:alpine AS runner
+# Internal CapRover upstream (host:port) for the API. Override via CapRover env var.
+ENV API_UPSTREAM=srv-captain--api:3001
 COPY --from=build /repo/apps/web/dist /usr/share/nginx/html
-COPY apps/web/nginx.conf /etc/nginx/conf.d/default.conf
+COPY apps/web/nginx.conf.template /etc/nginx/templates/default.conf.template
 EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]

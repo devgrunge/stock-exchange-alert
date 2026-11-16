@@ -16,6 +16,7 @@ export const env = {
   host: optional('HOST', '0.0.0.0'),
   databasePath: optional('DATABASE_PATH', './data/alert.db'),
   brapiToken: optional('BRAPI_TOKEN'),
+  brapiBaseUrl: optional('BRAPI_BASE_URL', 'https://brapi.dev'),
   vapidPublicKey: optional('VAPID_PUBLIC_KEY'),
   vapidPrivateKey: optional('VAPID_PRIVATE_KEY'),
   vapidSubject: optional('VAPID_SUBJECT', 'mailto:admin@example.com'),
