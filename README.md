@@ -1,10 +1,14 @@
 # Stock Exchange Alert
 
 Monitora cotações da B3 (**PETR4**, **TAEE4**, **BBSE3**) e dispara notificações **Web Push**
-quando as condições de alerta são atingidas:
+quando as condições de alerta são atingidas. O alerta é **intraday**, baseado no **preço de
+abertura do dia** (`regularMarketOpen` da brapi):
 
-- **Queda de 10%**: preço atual ≤ 90% do preço de compra.
-- **Próximo do alvo**: preço atual ≥ 98% do preço-alvo.
+- **Alta de +10%**: preço atual ≥ 110% do preço de abertura do dia.
+- **Queda de −10%**: preço atual ≤ 90% do preço de abertura do dia.
+
+Cada direção dispara **uma vez por dia** por ticker (o estado é resetado quando um novo
+pregão começa). O percentual é fixo em 10%.
 
 ## Arquitetura
 

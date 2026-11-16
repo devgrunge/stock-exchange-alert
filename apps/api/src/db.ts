@@ -14,16 +14,15 @@ export interface PushSubscriptionRow {
 
 interface AssetConfigRow {
   ticker: string;
-  purchase_price: number | null;
-  target_price: number | null;
   drop_alert_enabled: number;
-  target_alert_enabled: number;
+  rise_alert_enabled: number;
 }
 
 interface AlertStateRow {
   ticker: string;
+  trade_date: string;
   drop_alerted: number;
-  target_alerted: number;
+  rise_alerted: number;
 }
 
 let db: Database.Database | undefined;
@@ -38,19 +37,20 @@ export function initDb(): Database.Database {
   db = new Database(env.databasePath);
   db.pragma('journal_mode = WAL');
 
+  migrate();
+
   db.exec(`
     CREATE TABLE IF NOT EXISTS asset_config (
       ticker TEXT PRIMARY KEY,
-      purchase_price REAL,
-      target_price REAL,
       drop_alert_enabled INTEGER NOT NULL DEFAULT 1,
-      target_alert_enabled INTEGER NOT NULL DEFAULT 1
+      rise_alert_enabled INTEGER NOT NULL DEFAULT 1
     );
 
     CREATE TABLE IF NOT EXISTS alert_state (
       ticker TEXT PRIMARY KEY,
+      trade_date TEXT NOT NULL DEFAULT '',
       drop_alerted INTEGER NOT NULL DEFAULT 0,
-      target_alerted INTEGER NOT NULL DEFAULT 0
+      rise_alerted INTEGER NOT NULL DEFAULT 0
     );
 
     CREATE TABLE IF NOT EXISTS push_subscription (
@@ -69,10 +69,23 @@ function getDb(): Database.Database {
   return db ?? initDb();
 }
 
+/**
+ * Recreates the config/state tables if they still use the legacy
+ * "purchase price / target price" schema from before the intraday change.
+ */
+function migrate(): void {
+  const d = getDb();
+  const cols = d.prepare('PRAGMA table_info(asset_config)').all() as { name: string }[];
+  const legacy = cols.some((c) => c.name === 'purchase_price' || c.name === 'target_price');
+  if (legacy) {
+    d.exec('DROP TABLE IF EXISTS asset_config; DROP TABLE IF EXISTS alert_state;');
+  }
+}
+
 function seed(): void {
   const insertConfig = getDb().prepare(
-    `INSERT INTO asset_config (ticker, purchase_price, target_price, drop_alert_enabled, target_alert_enabled)
-     VALUES (?, ?, ?, ?, ?)
+    `INSERT INTO asset_config (ticker, drop_alert_enabled, rise_alert_enabled)
+     VALUES (?, ?, ?)
      ON CONFLICT(ticker) DO NOTHING`,
   );
   const insertState = getDb().prepare(
@@ -81,13 +94,7 @@ function seed(): void {
 
   const tx = getDb().transaction(() => {
     for (const cfg of DEFAULT_CONFIG) {
-      insertConfig.run(
-        cfg.ticker,
-        cfg.purchasePrice,
-        cfg.targetPrice,
-        cfg.dropAlertEnabled ? 1 : 0,
-        cfg.targetAlertEnabled ? 1 : 0,
-      );
+      insertConfig.run(cfg.ticker, cfg.dropAlertEnabled ? 1 : 0, cfg.riseAlertEnabled ? 1 : 0);
       insertState.run(cfg.ticker);
     }
   });
@@ -97,15 +104,15 @@ function seed(): void {
 function rowToConfig(row: AssetConfigRow): AssetConfig {
   return {
     ticker: row.ticker as Ticker,
-    purchasePrice: row.purchase_price,
-    targetPrice: row.target_price,
     dropAlertEnabled: row.drop_alert_enabled === 1,
-    targetAlertEnabled: row.target_alert_enabled === 1,
+    riseAlertEnabled: row.rise_alert_enabled === 1,
   };
 }
 
 export function getConfig(): AssetConfig[] {
-  const rows = getDb().prepare('SELECT * FROM asset_config ORDER BY ticker').all() as AssetConfigRow[];
+  const rows = getDb()
+    .prepare('SELECT * FROM asset_config ORDER BY ticker')
+    .all() as AssetConfigRow[];
   return rows.map(rowToConfig);
 }
 
@@ -123,29 +130,19 @@ export function updateConfig(
   const current = getConfigFor(ticker);
   const merged: AssetConfig = {
     ticker,
-    purchasePrice: patch.purchasePrice ?? current?.purchasePrice ?? null,
-    targetPrice: patch.targetPrice ?? current?.targetPrice ?? null,
     dropAlertEnabled: patch.dropAlertEnabled ?? current?.dropAlertEnabled ?? true,
-    targetAlertEnabled: patch.targetAlertEnabled ?? current?.targetAlertEnabled ?? true,
+    riseAlertEnabled: patch.riseAlertEnabled ?? current?.riseAlertEnabled ?? true,
   };
 
   getDb()
     .prepare(
-      `INSERT INTO asset_config (ticker, purchase_price, target_price, drop_alert_enabled, target_alert_enabled)
-       VALUES (?, ?, ?, ?, ?)
+      `INSERT INTO asset_config (ticker, drop_alert_enabled, rise_alert_enabled)
+       VALUES (?, ?, ?)
        ON CONFLICT(ticker) DO UPDATE SET
-         purchase_price = excluded.purchase_price,
-         target_price = excluded.target_price,
          drop_alert_enabled = excluded.drop_alert_enabled,
-         target_alert_enabled = excluded.target_alert_enabled`,
+         rise_alert_enabled = excluded.rise_alert_enabled`,
     )
-    .run(
-      ticker,
-      merged.purchasePrice,
-      merged.targetPrice,
-      merged.dropAlertEnabled ? 1 : 0,
-      merged.targetAlertEnabled ? 1 : 0,
-    );
+    .run(ticker, merged.dropAlertEnabled ? 1 : 0, merged.riseAlertEnabled ? 1 : 0);
 
   return merged;
 }
@@ -157,9 +154,17 @@ export function getAlertState(ticker: Ticker): AlertState {
 
   return {
     ticker,
+    tradeDate: row?.trade_date ?? '',
     dropAlerted: row?.drop_alerted === 1,
-    targetAlerted: row?.target_alerted === 1,
+    riseAlerted: row?.rise_alerted === 1,
   };
+}
+
+/** Resets both flags and records the new trading day. */
+export function resetAlertState(ticker: Ticker, tradeDate: string): void {
+  getDb()
+    .prepare('UPDATE alert_state SET trade_date = ?, drop_alerted = 0, rise_alerted = 0 WHERE ticker = ?')
+    .run(tradeDate, ticker);
 }
 
 export function setDropAlerted(ticker: Ticker, value: boolean): void {
@@ -168,9 +173,9 @@ export function setDropAlerted(ticker: Ticker, value: boolean): void {
     .run(value ? 1 : 0, ticker);
 }
 
-export function setTargetAlerted(ticker: Ticker, value: boolean): void {
+export function setRiseAlerted(ticker: Ticker, value: boolean): void {
   getDb()
-    .prepare('UPDATE alert_state SET target_alerted = ? WHERE ticker = ?')
+    .prepare('UPDATE alert_state SET rise_alerted = ? WHERE ticker = ?')
     .run(value ? 1 : 0, ticker);
 }
 

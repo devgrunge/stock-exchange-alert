@@ -1,8 +1,8 @@
-// Thresholds for alert evaluation
-export const DROP_THRESHOLD = 0.9; // price <= 90% of purchase price triggers drop alert
-export const DROP_RECOVER = 0.92; // hysteresis: reset drop alert when price recovers above 92%
-export const TARGET_APPROACH = 0.98; // price >= 98% of target triggers target alert
-export const TARGET_RECOVER = 0.96; // hysteresis: reset target alert when price falls below 96%
+// Intraday alert threshold: alert fires when the price moves ±10%
+// relative to the day's opening price.
+export const INTRADAY_MOVE_PCT = 0.1;
+export const DROP_THRESHOLD = 1 - INTRADAY_MOVE_PCT; // price <= open * 0.9
+export const RISE_THRESHOLD = 1 + INTRADAY_MOVE_PCT; // price >= open * 1.1
 
 // How often the scheduler checks quotes (milliseconds)
 export const CHECK_INTERVAL_MS = 15 * 60 * 1000; // 15 minutes

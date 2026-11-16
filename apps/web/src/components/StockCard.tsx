@@ -11,22 +11,26 @@ function formatBRL(value: number): string {
 
 export function StockCard({ quote, config }: StockCardProps) {
   const ticker = quote?.ticker ?? config?.ticker ?? '—';
-  const changePositive = (quote?.changePercent ?? 0) >= 0;
+
+  const changeFromOpen =
+    quote?.open != null && quote.open > 0 ? (quote.price / quote.open - 1) * 100 : null;
+  const changePositive = (changeFromOpen ?? 0) >= 0;
+
   const dropTriggered =
-    config?.purchasePrice != null && quote != null && quote.price <= config.purchasePrice * 0.9;
-  const targetTriggered =
-    config?.targetPrice != null && quote != null && quote.price >= config.targetPrice * 0.98;
+    quote?.open != null && quote.open > 0 && quote.price <= quote.open * 0.9;
+  const riseTriggered =
+    quote?.open != null && quote.open > 0 && quote.price >= quote.open * 1.1;
 
   return (
     <div className="rounded-2xl border border-slate-800 bg-slate-900 p-5 shadow-sm">
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold">{ticker}</h2>
-        {quote && (
+        {changeFromOpen != null && (
           <span
             className={`text-sm font-medium ${changePositive ? 'text-green-400' : 'text-red-400'}`}
           >
-            {quote.changePercent >= 0 ? '+' : ''}
-            {quote.changePercent.toFixed(2)}%
+            {changeFromOpen >= 0 ? '+' : ''}
+            {changeFromOpen.toFixed(2)}%
           </span>
         )}
       </div>
@@ -37,24 +41,24 @@ export function StockCard({ quote, config }: StockCardProps) {
 
       <div className="mt-4 space-y-1.5 text-sm text-slate-400">
         <div className="flex justify-between">
-          <span>Preço de compra</span>
+          <span>Abertura</span>
           <span className="tabular-nums">
-            {config?.purchasePrice != null ? formatBRL(config.purchasePrice) : 'não definido'}
+            {quote?.open != null ? formatBRL(quote.open) : '—'}
           </span>
         </div>
         <div className="flex justify-between">
-          <span>Alvo</span>
+          <span>Variação no dia</span>
           <span className="tabular-nums">
-            {config?.targetPrice != null ? formatBRL(config.targetPrice) : 'não definido'}
+            {changeFromOpen != null ? `${changeFromOpen >= 0 ? '+' : ''}${changeFromOpen.toFixed(2)}%` : '—'}
           </span>
         </div>
       </div>
 
-      {(dropTriggered || targetTriggered) && (
+      {(dropTriggered || riseTriggered) && (
         <div className="mt-3 rounded-lg bg-amber-500/10 px-3 py-2 text-xs font-medium text-amber-300">
-          {dropTriggered && '⚠️ Queda de 10% detectada'}
-          {dropTriggered && targetTriggered && ' · '}
-          {targetTriggered && '🎯 Próximo do alvo'}
+          {dropTriggered && '📉 Queda de 10% no dia'}
+          {dropTriggered && riseTriggered && ' · '}
+          {riseTriggered && '📈 Alta de 10% no dia'}
         </div>
       )}
     </div>

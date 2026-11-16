@@ -47,58 +47,25 @@ interface AssetFormProps {
 }
 
 function AssetForm({ config, saving, onSave }: AssetFormProps) {
-  const [purchase, setPurchase] = useState(config?.purchasePrice?.toString() ?? '');
-  const [target, setTarget] = useState(config?.targetPrice?.toString() ?? '');
   const [dropEnabled, setDropEnabled] = useState(config?.dropAlertEnabled ?? true);
-  const [targetEnabled, setTargetEnabled] = useState(config?.targetAlertEnabled ?? true);
+  const [riseEnabled, setRiseEnabled] = useState(config?.riseAlertEnabled ?? true);
 
   if (!config) return null;
 
   function handleSubmit(event: React.FormEvent): void {
     event.preventDefault();
     onSave({
-      purchasePrice: purchase === '' ? null : Number(purchase),
-      targetPrice: target === '' ? null : Number(target),
       dropAlertEnabled: dropEnabled,
-      targetAlertEnabled: targetEnabled,
+      riseAlertEnabled: riseEnabled,
     });
   }
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="rounded-xl border border-slate-800 bg-slate-900 p-4"
-    >
+    <form onSubmit={handleSubmit} className="rounded-xl border border-slate-800 bg-slate-900 p-4">
       <h3 className="font-semibold">{config.ticker}</h3>
-
-      <div className="mt-3 grid grid-cols-2 gap-3">
-        <label className="block text-sm">
-          <span className="text-slate-400">Preço de compra</span>
-          <input
-            type="number"
-            step="0.01"
-            min="0"
-            inputMode="decimal"
-            value={purchase}
-            onChange={(e) => setPurchase(e.target.value)}
-            className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm"
-            placeholder="0,00"
-          />
-        </label>
-        <label className="block text-sm">
-          <span className="text-slate-400">Preço-alvo</span>
-          <input
-            type="number"
-            step="0.01"
-            min="0"
-            inputMode="decimal"
-            value={target}
-            onChange={(e) => setTarget(e.target.value)}
-            className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm"
-            placeholder="0,00"
-          />
-        </label>
-      </div>
+      <p className="mt-0.5 text-xs text-slate-500">
+        Dispara quando o preço varia ±10% em relação à abertura do dia.
+      </p>
 
       <div className="mt-3 flex gap-4 text-sm">
         <label className="flex items-center gap-2">
@@ -107,15 +74,15 @@ function AssetForm({ config, saving, onSave }: AssetFormProps) {
             checked={dropEnabled}
             onChange={(e) => setDropEnabled(e.target.checked)}
           />
-          Alerta de queda
+          Alerta de queda (−10%)
         </label>
         <label className="flex items-center gap-2">
           <input
             type="checkbox"
-            checked={targetEnabled}
-            onChange={(e) => setTargetEnabled(e.target.checked)}
+            checked={riseEnabled}
+            onChange={(e) => setRiseEnabled(e.target.checked)}
           />
-          Alerta de alvo
+          Alerta de alta (+10%)
         </label>
       </div>
 

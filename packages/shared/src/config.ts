@@ -5,10 +5,8 @@ import type { AssetConfig } from './types';
 export function defaultAssetConfig(ticker: Ticker): AssetConfig {
   return {
     ticker,
-    purchasePrice: null,
-    targetPrice: null,
     dropAlertEnabled: true,
-    targetAlertEnabled: true,
+    riseAlertEnabled: true,
   };
 }
 

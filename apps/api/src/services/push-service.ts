@@ -39,8 +39,8 @@ export class PushService {
 
     const title =
       event.kind === 'drop'
-        ? `📉 ${event.ticker} em queda`
-        : `🎯 ${event.ticker} próximo do alvo`;
+        ? `📉 ${event.ticker} em queda (intraday)`
+        : `📈 ${event.ticker} em alta (intraday)`;
 
     await this.broadcast({ title, body: event.message, tag: `${event.ticker}-${event.kind}` });
   }

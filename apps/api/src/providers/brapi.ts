@@ -6,6 +6,7 @@ interface BrapiQuoteItem {
   regularMarketPrice: number;
   regularMarketChange: number;
   regularMarketChangePercent: number;
+  regularMarketOpen?: number | null;
   currency?: string;
   regularMarketTime?: string;
 }
@@ -78,6 +79,7 @@ export class BrapiProvider implements QuoteProvider {
         price: item.regularMarketPrice,
         change: item.regularMarketChange,
         changePercent: item.regularMarketChangePercent,
+        open: item.regularMarketOpen ?? null,
         currency: item.currency ?? 'BRL',
         updatedAt: item.regularMarketTime
           ? new Date(item.regularMarketTime).toISOString()
